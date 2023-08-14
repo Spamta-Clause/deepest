@@ -90,6 +90,120 @@ while True:
     else:
         type(colour.reset + colour.blue + colour.italic + currentRoom.description + colour.reset)
 
+
+        # Engages in combat for the enemies in the room
+    enemiesTotalHealth = 0
+    enemyOptions = []
+    for roomEnemy in currentRoom.enemies:
+        enemiesTotalHealth += currentRoom.enemies[roomEnemy].health
+        enemyOptions.append(roomEnemy.lower())
+    if(len(enemyOptions) > 0):
+        enemyOptionsHigh = []
+        for thing in enemyOptions:
+            enemyOptionsHigh.append(thing.capitalize())
+
+    # Player attacking
+    def playerAttack():
+        global enemiesTotalHealth
+        global inventory
+        global previousRoom
+        global currentRoom
+        # Player attacking
+        attack = "!"
+        enemyOptions = []
+        enemyOptionsHigh = []
+        for roomEnemy in currentRoom.enemies:
+            enemyOptions.append(roomEnemy.lower())
+            enemyOptionsHigh.append(roomEnemy.capitalize())
+
+        type(f"{colour.green}{colour.bold}{colour.italic}The enemies present in this room are, {', '.join(enemyOptionsHigh)}.")
+        while not (attack.lower() in enemyOptions or attack.lower() == "run"):
+            attack = inputType(f"{colour.reset}{colour.purple}What would you like to do? Enter either run, or the name of the enemy you would like to attack.   -   {colour.reset}{colour.yellow}{colour.bold}")
+            if(attack.lower() == "run"):
+                currentRoom = previousRoom
+                return "ran"
+        
+                
+            if(attack.lower() in enemyOptions):
+                weapons = []
+                for thing in inventory:
+                    if isinstance(inventory[thing], item.WEAPON):
+                        weapons.append(inventory[thing].name + f", dealing {inventory[thing].damage} damage")
+                weapon = "!"
+                if(len(weapons) == 0):
+                    type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You have no weapons!{colour.reset}")
+                    weapon = "fists"
+                else:    
+                    weapons = []
+                    for thing in inventory:
+                        if isinstance(inventory[thing], item.WEAPON):
+                            weapons.append(inventory[thing].name.lower())
+                    weapon = inputType(f"{colour.reset}{colour.purple}What weapon would you like to use? Your current items are {', '.join(weapons)}  -   {colour.reset}{colour.yellow}{colour.bold}")
+                    if(not (weapon.lower() in weapons)):
+                        type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
+                        playerAttack()
+                weapons = []
+                for thing in inventory:
+                    if isinstance(inventory[thing], item.WEAPON):
+                        weapons.append(inventory[thing].name.lower())
+                if ((weapon.lower() in weapons) or (weapon.lower() == "fists")):
+                    weapons = []
+                    for thing in inventory:
+                        if isinstance(thing, item.WEAPON):
+                            weapons.append(inventory[thing].name.lower())
+                    
+                    if(weapon != "fists"):
+                        if(inventory[weapon.lower()].damage >= currentRoom.enemies[attack.capitalize()].defense):
+                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your {weapon}! You inflict a total of {inventory[weapon.lower()].damage} damage!{colour.reset}")
+                            currentRoom.enemies[attack.capitalize()].health -= inventory[weapon.lower()].damage
+                        else:
+                            type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
+                    else:        
+                        if(1 >= currentRoom.enemies[attack.capitalize()].defense):
+                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your fists! You inflict a total of 1 damage!{colour.reset}")
+                            currentRoom.enemies[attack.capitalize()].health -= 1
+                        else:
+                            type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
+                            
+                if(currentRoom.enemies[attack.capitalize()].health <= 0):
+                    type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} falls to the floor!")
+                    enemiesTotalHealth -= currentRoom.enemies[attack.capitalize()].maxHealth
+                    if(random.randint(1,10) < 5):
+                        type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} dropped their {currentRoom.enemies[attack.capitalize()].weapon.name}!{colour.reset}")
+                        currentRoom.items[currentRoom.enemies[attack.capitalize()].weapon.name] = currentRoom.enemies[attack.capitalize()].weapon
+                    currentRoom.enemies.pop(attack.capitalize())
+            else:   
+                type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
+                playerAttack()
+
+    # Lets players and enemies attack
+    while enemiesTotalHealth > 0 and health > 0:
+        command = playerAttack()
+        if(command == "ran"):
+            if currentRoom not in visitedRooms:
+                visitedRooms.append(currentRoom)
+                type(colour.reset + colour.bold + colour.green + colour.italic + currentRoom.description + colour.reset)
+            else:
+                type(colour.reset + colour.blue + colour.italic + currentRoom.description + colour.reset)
+            break
+        for creature in currentRoom.enemies:
+            type(f"{colour.reset}{colour.bold}{colour.red}{creature} swings at you with their {currentRoom.enemies[creature].weapon.name}{colour.reset}")
+            if(currentRoom.enemies[creature].weapon.damage >= defense):
+                health -=currentRoom.enemies[creature].weapon.damage
+                if(health <= 0):
+                    type(f"{colour.reset}{colour.italic}{colour.bold}{colour.red}YOU DIED")
+                    time.sleep(3)
+                    quit()
+                type(f"{colour.reset}{colour.bold}{colour.red}You took {currentRoom.enemies[creature].weapon.damage} damage. You're at {health} health!{colour.reset}")
+            else:
+                type(f"{colour.reset}{colour.bold}{colour.green}{creature} were unable to hit you, as your defense is too high compared to their weapon of choice.{colour.reset}")    
+            # Attack Player
+            # Check if players defense is lower or equal to the weapons attack damage
+   
+    
+
+
+
     # Check if the current room has any items and then asks if they want them
     itemsInRoom = []
     for object in currentRoom.items:
@@ -172,116 +286,7 @@ while True:
             else:
                 type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
    
-    # Engages in combat for the enemies in the room
-    enemiesTotalHealth = 0
-    enemyOptions = []
-    for roomEnemy in currentRoom.enemies:
-        enemiesTotalHealth += currentRoom.enemies[roomEnemy].health
-        enemyOptions.append(roomEnemy.lower())
-    if(len(enemyOptions) > 0):
-        enemyOptionsHigh = []
-        for thing in enemyOptions:
-            enemyOptionsHigh.append(thing.capitalize())
-
-    # Player attacking
-    def playerAttack():
-        global enemiesTotalHealth
-        global inventory
-        global previousRoom
-        global currentRoom
-        # Player attacking
-        attack = "!"
-        enemyOptions = []
-        enemyOptionsHigh = []
-        for roomEnemy in currentRoom.enemies:
-            enemyOptions.append(roomEnemy.lower())
-            enemyOptionsHigh.append(roomEnemy.capitalize())
-
-        type(f"{colour.green}{colour.bold}{colour.italic}The enemies present in this room are, {', '.join(enemyOptionsHigh)}.")
-        while not (attack.lower() in enemyOptions or attack.lower() == "run"):
-            attack = inputType(f"{colour.reset}{colour.purple}What would you like to do? Enter either run, or the name of the enemy you would like to attack.   -   {colour.reset}{colour.yellow}{colour.bold}")
-            if(attack.lower() == "run"):
-                currentRoom = previousRoom
-                return "ran"
-        
-                
-            if(attack.lower() in enemyOptions):
-                weapons = []
-                for thing in inventory:
-                    if isinstance(inventory[thing], item.WEAPON):
-                        weapons.append(inventory[thing].name + f", dealing {inventory[thing].damage} damage")
-                weapon = "!"
-                if(len(weapons) == 0):
-                    type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You have no weapons!{colour.reset}")
-                    weapon = "fists"
-                else:    
-                    weapons = []
-                    for thing in inventory:
-                        if isinstance(inventory[thing], item.WEAPON):
-                            weapons.append(inventory[thing].name.lower())
-                    weapon = inputType(f"{colour.reset}{colour.purple}What weapon would you like to use? Your current items are {', '.join(weapons)}  -   {colour.reset}{colour.yellow}{colour.bold}")
-                    print(weapons)
-                    if(not (weapon.lower() in weapons)):
-                        type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
-                        playerAttack()
-                weapons = []
-                for thing in inventory:
-                    if isinstance(inventory[thing], item.WEAPON):
-                        weapons.append(inventory[thing].name.lower())
-                if ((weapon.lower() in weapons) or (weapon.lower() == "fists")):
-                    weapons = []
-                    for thing in inventory:
-                        if isinstance(thing, item.WEAPON):
-                            weapons.append(inventory[thing].name.lower())
-                    
-                    if(weapon != "fists"):
-                        if(inventory[weapon.lower()].damage >= currentRoom.enemies[attack.capitalize()].defense):
-                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your {weapon}! You inflict a total of {inventory[weapon.lower()].damage} damage!{colour.reset}")
-                            currentRoom.enemies[attack.capitalize()].health -= inventory[weapon.lower()].damage
-                        else:
-                            type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
-                    else:        
-                        if(1 >= currentRoom.enemies[attack.capitalize()].defense):
-                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your fists! You inflict a total of 1 damage!{colour.reset}")
-                            currentRoom.enemies[attack.capitalize()].health -= 1
-                        else:
-                            type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
-                            
-                if(currentRoom.enemies[attack.capitalize()].health <= 0):
-                    type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} falls to the floor!")
-                    enemiesTotalHealth -= currentRoom.enemies[attack.capitalize()].maxHealth
-                    if(random.randint(1,4) != 1):
-                        type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} dropped their {currentRoom.enemies[attack.capitalize()].weapon.name}!{colour.reset}")
-                        currentRoom.items[currentRoom.enemies[attack.capitalize()].weapon.name] = currentRoom.enemies[attack.capitalize()].weapon
-                    currentRoom.enemies.pop(attack.capitalize())
-            else:   
-                type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
-                playerAttack()
-
-    # Lets players and enemies attack
-    while enemiesTotalHealth > 0 and health > 0:
-        command = playerAttack()
-        if(command == "ran"):
-            if currentRoom not in visitedRooms:
-                visitedRooms.append(currentRoom)
-                type(colour.reset + colour.bold + colour.green + colour.italic + currentRoom.description + colour.reset)
-            else:
-                type(colour.reset + colour.blue + colour.italic + currentRoom.description + colour.reset)
-            break
-        for creature in currentRoom.enemies:
-            type(f"{colour.reset}{colour.bold}{colour.red}{creature} swings at you with their {currentRoom.enemies[creature].weapon.name}{colour.reset}")
-            if(currentRoom.enemies[creature].weapon.damage >= defense):
-                health -=currentRoom.enemies[creature].weapon.damage
-                if(health <= 0):
-                    type(f"{colour.reset}{colour.italic}{colour.bold}{colour.red}YOU DIED")
-                    time.sleep(3)
-                    quit()
-                type(f"{colour.reset}{colour.bold}{colour.red}You took {currentRoom.enemies[creature].weapon.damage} damage. You're at {health} health!{colour.reset}")
-            else:
-                type(f"{colour.reset}{colour.bold}{colour.green}{creature} were unable to hit you, as your defense is too high compared to their weapon of choice.{colour.reset}")    
-            # Attack Player
-            # Check if players defense is lower or equal to the weapons attack damage
-    
+ 
 
     # Asks the user which direction they want to go, repeating if it is not a valid input
     direction = "!"
