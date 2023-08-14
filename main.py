@@ -3,22 +3,23 @@ import time, random
 
 # Create the items
 fists = item.WEAPON("Fists","fists",1)
-rustyHalberd = item.WEAPON("Rusty Halberd","spear",6)
-bronzeHalberd = item.WEAPON("Bronze Halberd","spear",13)
+boneDagger = item.WEAPON("Bone Dagger","dagger",3)
+rustyHalberd = item.WEAPON("Rusty Halberd","spear",4)
+bronzeHalberd = item.WEAPON("Bronze Halberd","spear",11)
 rustyGreatsword = item.WEAPON("Rusty Greatsword","claymore",15)
 
 leather = item.ARMOUR("Leather",1)
 chainmail = item.ARMOUR("Chainmail",3)
 # Create the enemies
-skeleton = enemy.ENEMY("Skeleton","undead",10,1,rustyHalberd)
-
+skeleton = enemy.ENEMY("Skeleton","undead",10,1,boneDagger)
+necromancer = enemy.ENEMY("Necromancer","humanoid",20,3,bronzeHalberd)
 
 # Create the rooms
 library = room.ROOM("You are in a library. There is a door to the north and a door to the south.", "NS", items={"Chainmail":chainmail})
 barracks = room.ROOM("You are in a barracks. There is a door to the north.", "N", items={"Leather":leather})
 weaponsRoom = room.ROOM("You are in a weapons room, there are weapons strewn upon the floor. There is a door to the south as well as one to the west.", "SW", items={"Rusty Halberd":rustyHalberd,"Bronze Halberd":bronzeHalberd,"Rusty Greatsword":rustyGreatsword})
-cage = room.ROOM("You are in a large cage like room, in front of you lies an animated skeleton","E",enemies={"S1":skeleton})
-
+cage = room.ROOM("You are in a large cage like room, in front of you lies an animated skeleton, there are doors to the east and to the north.","NE",enemies={"S1":skeleton})
+ritualRoom = room.ROOM("You are in a room with a large pentagram on the floor, there is a door to the south, a necromancer and three animated skeletons are within.","S",enemies={"N1":necromancer,"S1":skeleton,"S2":skeleton,"S3":skeleton})
 
 # Set the exits for the rooms
 library.nRoom=weaponsRoom 
@@ -29,11 +30,16 @@ barracks.nRoom=library
 weaponsRoom.sRoom=library
 weaponsRoom.wRoom=cage
 
+cage.eRoom=weaponsRoom
+cage.nRoom=ritualRoom
+
+ritualRoom.sRoom=cage
+
 currentRoom = weaponsRoom
 
 visitedRooms = []
 
-health = 10
+health = 20
 defense = 0
 inventory = {}
 
@@ -208,19 +214,20 @@ while True:
                 if(len(weapons) == 0):
                     type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You have no weapons!{colour.reset}")
                     weapon = "fists"
-                else:
+                else:    
+                    weapons = []
+                    for thing in inventory:
+                        if isinstance(inventory[thing], item.WEAPON):
+                            weapons.append(inventory[thing].name.lower())
                     weapon = inputType(f"{colour.reset}{colour.purple}What weapon would you like to use? Your current items are {', '.join(weapons)}  -   {colour.reset}{colour.yellow}{colour.bold}")
-                    if(not (weapon.lower in weapons)):
+                    print(weapons)
+                    if(not (weapon.lower() in weapons)):
                         type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
                         playerAttack()
                 weapons = []
                 for thing in inventory:
                     if isinstance(inventory[thing], item.WEAPON):
                         weapons.append(inventory[thing].name.lower())
-                if(currentRoom.enemies[attack.capitalize()].health <= 0):
-                    type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} falls to the floor!")
-                    enemiesTotalHealth -= currentRoom.enemies[attack.capitalize()].maxHealth
-                    currentRoom.enemies.pop(attack.capitalize())
                 if ((weapon.lower() in weapons) or (weapon.lower() == "fists")):
                     weapons = []
                     for thing in inventory:
@@ -243,6 +250,9 @@ while True:
                 if(currentRoom.enemies[attack.capitalize()].health <= 0):
                     type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} falls to the floor!")
                     enemiesTotalHealth -= currentRoom.enemies[attack.capitalize()].maxHealth
+                    if(random.randint(1,4) != 1):
+                        type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} dropped their {currentRoom.enemies[attack.capitalize()].weapon.name}!{colour.reset}")
+                        currentRoom.items[currentRoom.enemies[attack.capitalize()].weapon.name] = currentRoom.enemies[attack.capitalize()].weapon
                     currentRoom.enemies.pop(attack.capitalize())
             else:   
                 type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
