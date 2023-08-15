@@ -3,23 +3,25 @@ import time, random
 
 # Create the items
 fists = item.WEAPON("Fists","fists",1)
-boneDagger = item.WEAPON("Bone Dagger","dagger",3)
-rustyHalberd = item.WEAPON("Rusty Halberd","spear",4)
+boneDagger = item.WEAPON("Bone Dagger","dagger",2)
+rustyHalberd = item.WEAPON("Rusty Halberd","spear",5)
 bronzeHalberd = item.WEAPON("Bronze Halberd","spear",11)
 rustyGreatsword = item.WEAPON("Rusty Greatsword","claymore",15)
 
+# Create the armour
 leather = item.ARMOUR("Leather",1)
 chainmail = item.ARMOUR("Chainmail",3)
+
 # Create the enemies
-skeleton = enemy.ENEMY("Skeleton","undead",10,1,boneDagger)
-necromancer = enemy.ENEMY("Necromancer","humanoid",20,3,bronzeHalberd)
+skeleton = enemy.ENEMY("Skeleton","undead",8,1,boneDagger)
+necromancer = enemy.ENEMY("Necromancer","humanoid",13,3,rustyHalberd)
 
 # Create the rooms
-library = room.ROOM("You are in a library. There is a door to the north and a door to the south.", "NS", items={"Chainmail":chainmail})
+library = room.ROOM("You are in a library. There is a door to the north and a door to the south.", "NS")
 barracks = room.ROOM("You are in a barracks. There is a door to the north.", "N", items={"Leather":leather})
 weaponsRoom = room.ROOM("You are in a weapons room, there are weapons strewn upon the floor. There is a door to the south as well as one to the west.", "SW", items={"Rusty Halberd":rustyHalberd,"Bronze Halberd":bronzeHalberd,"Rusty Greatsword":rustyGreatsword})
-cage = room.ROOM("You are in a large cage like room, in front of you lies an animated skeleton, there are doors to the east and to the north.","NE",enemies={"S1":skeleton})
-ritualRoom = room.ROOM("You are in a room with a large pentagram on the floor, there is a door to the south, a necromancer and three animated skeletons are within.","S",enemies={"N1":necromancer,"S1":skeleton,"S2":skeleton,"S3":skeleton})
+cage = room.ROOM("You are in a large cage like room, in front of you lies an animated skeleton, there are doors to the east and to the north.","NE","You are in a cage like room, in front of you lies the body of a defeated animated skeleton",enemies={"S1":skeleton})
+ritualRoom = room.ROOM("You are in a room with a large pentagram on the floor, there is a door to the south, a necromancer and three animated skeletons are within.","S","You are in a room with a large pentagram on the floor, there is a door to the south, the bodies of a defeated necromancer and three animated skeletons are within",enemies={"N1":necromancer,"S1":skeleton,"S2":skeleton,"S3":skeleton})
 
 # Set the exits for the rooms
 library.nRoom=weaponsRoom 
@@ -35,7 +37,7 @@ cage.nRoom=ritualRoom
 
 ritualRoom.sRoom=cage
 
-currentRoom = weaponsRoom
+currentRoom = barracks
 
 visitedRooms = []
 
@@ -134,11 +136,11 @@ while True:
                     type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You have no weapons!{colour.reset}")
                     weapon = "fists"
                 else:    
+                    weapon = inputType(f"{colour.reset}{colour.purple}What weapon would you like to use? Your current items are {', '.join(weapons)}  -   {colour.reset}{colour.yellow}{colour.bold}")
                     weapons = []
                     for thing in inventory:
                         if isinstance(inventory[thing], item.WEAPON):
                             weapons.append(inventory[thing].name.lower())
-                    weapon = inputType(f"{colour.reset}{colour.purple}What weapon would you like to use? Your current items are {', '.join(weapons)}  -   {colour.reset}{colour.yellow}{colour.bold}")
                     if(not (weapon.lower() in weapons)):
                         type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
                         playerAttack()
@@ -154,7 +156,7 @@ while True:
                     
                     if(weapon != "fists"):
                         if(inventory[weapon.lower()].damage >= currentRoom.enemies[attack.capitalize()].defense):
-                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your {weapon}! You inflict a total of {inventory[weapon.lower()].damage} damage!{colour.reset}")
+                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your {weapon.lower().capitalize}! You inflict a total of {inventory[weapon.lower()].damage} damage!{colour.reset}")
                             currentRoom.enemies[attack.capitalize()].health -= inventory[weapon.lower()].damage
                         else:
                             type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
@@ -199,7 +201,8 @@ while True:
                 type(f"{colour.reset}{colour.bold}{colour.green}{creature} were unable to hit you, as your defense is too high compared to their weapon of choice.{colour.reset}")    
             # Attack Player
             # Check if players defense is lower or equal to the weapons attack damage
-   
+    if(currentRoom.clearDescription != None):
+        currentRoom.description = currentRoom.clearDescription
     
 
 
