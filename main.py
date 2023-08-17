@@ -1,5 +1,5 @@
 import colour, room, item, enemy, colour
-import time, random
+import time, random, copy, atexit, os
 
 # Create the items
 fists = item.WEAPON("Fists","fists",1)
@@ -17,11 +17,39 @@ skeleton = enemy.ENEMY("Skeleton","undead",8,1,boneDagger)
 necromancer = enemy.ENEMY("Necromancer","humanoid",13,3,rustyHalberd)
 
 # Create the rooms
-library = room.ROOM("You are in a library. There is a door to the north and a door to the south.", "NS")
-barracks = room.ROOM("You are in a barracks. There is a door to the north.", "N", items={"Leather":leather})
-weaponsRoom = room.ROOM("You are in a weapons room, there are weapons strewn upon the floor. There is a door to the south as well as one to the west.", "SW", items={"Rusty Halberd":rustyHalberd,"Bronze Halberd":bronzeHalberd,"Rusty Greatsword":rustyGreatsword})
-cage = room.ROOM("You are in a large cage like room, in front of you lies an animated skeleton, there are doors to the east and to the north.","NE","You are in a cage like room, in front of you lies the body of a defeated animated skeleton",enemies={"S1":skeleton})
-ritualRoom = room.ROOM("You are in a room with a large pentagram on the floor, there is a door to the south, a necromancer and three animated skeletons are within.","S","You are in a room with a large pentagram on the floor, there is a door to the south, the bodies of a defeated necromancer and three animated skeletons are within",enemies={"N1":necromancer,"S1":skeleton,"S2":skeleton,"S3":skeleton})
+library = room.ROOM("library","You are in a library. There is a door to the north and a door to the south.", "NS")
+barracks = room.ROOM("barracks","You are in a barracks. There is a door to the north.", "N", items={"Leather":leather})
+weaponsRoom = room.ROOM("weaponRoom","You are in a weapons room, there are weapons strewn upon the floor. There is a door to the south as well as one to the west.", "SW", items={"Rusty Halberd":rustyHalberd,"Bronze Halberd":bronzeHalberd,"Rusty Greatsword":rustyGreatsword})
+cage = room.ROOM("cage","You are in a large cage like room, in front of you lies an animated skeleton, there are doors to the east and to the north.","NE","You are in a cage like room, in front of you lies the body of a defeated animated skeleton",enemies={"S1":copy.copy(skeleton)})
+ritualRoom = room.ROOM("ritualRoom","You are in a room with a large pentagram on the floor, there is a door to the south, a necromancer and three animated skeletons are within.","S","You are in a room with a large pentagram on the floor, there is a door to the south, the bodies of a defeated necromancer and three animated skeletons are within",enemies={"N1":copy.copy(necromancer),"S1":copy.copy(skeleton),"S2":copy.copy(skeleton),"S3":copy.copy(skeleton)})
+
+
+import pickle
+
+rooms = [library,barracks,weaponsRoom,cage,ritualRoom]
+roomsDict = {"library":library,"barracks":barracks,"weaponsRoom":weaponsRoom,"cage":cage,"ritualRoom":ritualRoom}
+
+try:
+    loadedInstances = []
+    for instance in room:
+        filename = f'rooms\\{instance.name}.pickle'
+        with open(filename, 'rb') as file:
+            loadedInstance = pickle.load(file)
+            loadedInstances.append(loadedInstance)
+
+    for instance in rooms:
+        filename = f'{instance.name}.pickle'
+        with open(filename, 'rb') as file:
+            loadedInstance = pickle.load(file)
+            roomsDict[loadedInstance.name] = loadedInstance
+
+    library = roomsDict["library"]
+except:
+    pass
+
+
+
+
 
 # Set the exits for the rooms
 library.nRoom=weaponsRoom 
@@ -45,7 +73,74 @@ health = 20
 defense = 0
 inventory = {}
 
+def start():
+    folderPath = "rooms"
 
+    if not os.path.exists(folderPath):
+        os.makedirs(folderPath)
+        
+    global inventory
+    global currentRoom
+    global hp
+    global visitedRooms
+
+    try:
+        inventory = pickle.load(open("inv.json","rb"))
+    except:
+        inventory = {}
+    try:
+        currentRoom = pickle.load(open("currentRoom.json","rb"))
+    except:
+        currentRoom = barracks
+    try:
+        hp = int(pickle.load(open("hp.json","rb")))
+    except:
+        hp = 20
+    try:
+        visitedRooms = pickle.load(open("prevRooms.json","rb"))
+    except:
+        visitedRooms = []
+
+def close():
+    global inventory
+    global currentRoom
+    global hp
+    global visitedRooms
+    #Saves the information regarding inventory, health, current room and visited rooms
+    try:
+            inv = open("inv.json","xb")
+    except:
+            inv = open("inv.json","wb")
+    try:
+            hp = open("hp.json","xb") 
+    except:
+            hp = open("hp.json","wb")
+    try:
+            cR = open("currentRoom.json","xb") 
+    except:
+            cR = open("currentRoom.json","wb")
+    try:
+            pR = open("prevRooms.json","xb")
+    except:
+            pR = open("prevRooms.json","wb")
+    pickle.dump(inventory,inv)
+    pickle.dump(health,hp)
+    pickle.dump(currentRoom,cR)
+    pickle.dump(visitedRooms,pR)
+
+    # Saves information regarding rooms
+    for instance in rooms:
+            filename = f'rooms\\{instance.name}.pickle'
+            with open(filename, 'wb') as file:
+                pickle.dump(instance, file)
+    inv.close()
+    hp.close()
+    cR.close()
+    pR.close()
+
+
+
+start()
 
 def type(text):
     #Slowly types text that can be changed within the same line
@@ -81,10 +176,11 @@ def Show_Inventory():
 def Show_Commands():
     type(f"{colour.reset}{colour.bold}{colour.italic}{colour.white}Commands:{optionsList}")
 
-optionsList = ["i","help"]
-options = {"i":Show_Inventory, "help":Show_Commands}
+optionsList = ["i","help","quit"]
+options = {"i":Show_Inventory, "help":Show_Commands,"quit":close}
 
 while True:
+    enemiesTotalHealth = 0
     # Check if the current room has been visited before and then types the description, changing the colour based on whether or not it has
     if currentRoom not in visitedRooms:
         visitedRooms.append(currentRoom)
@@ -95,6 +191,7 @@ while True:
 
         # Engages in combat for the enemies in the room
     enemiesTotalHealth = 0
+    
     enemyOptions = []
     for roomEnemy in currentRoom.enemies:
         enemiesTotalHealth += currentRoom.enemies[roomEnemy].health
@@ -121,62 +218,63 @@ while True:
         type(f"{colour.green}{colour.bold}{colour.italic}The enemies present in this room are, {', '.join(enemyOptionsHigh)}.")
         while not (attack.lower() in enemyOptions or attack.lower() == "run"):
             attack = inputType(f"{colour.reset}{colour.purple}What would you like to do? Enter either run, or the name of the enemy you would like to attack.   -   {colour.reset}{colour.yellow}{colour.bold}")
-            if(attack.lower() == "run"):
-                currentRoom = previousRoom
-                return "ran"
+            if(not(attack.lower() in enemyOptions or attack.lower() == "run")):   
+                type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
+
+        
+        if(attack.lower() == "run"):
+            currentRoom = previousRoom
+            return "ran"
         
                 
-            if(attack.lower() in enemyOptions):
-                weapons = []
-                for thing in inventory:
-                    if isinstance(inventory[thing], item.WEAPON):
-                        weapons.append(inventory[thing].name + f", dealing {inventory[thing].damage} damage")
-                weapon = "!"
-                if(len(weapons) == 0):
-                    type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You have no weapons!{colour.reset}")
-                    weapon = "fists"
-                else:    
-                    weapon = inputType(f"{colour.reset}{colour.purple}What weapon would you like to use? Your current items are {', '.join(weapons)}  -   {colour.reset}{colour.yellow}{colour.bold}")
-                    weapons = []
-                    for thing in inventory:
-                        if isinstance(inventory[thing], item.WEAPON):
-                            weapons.append(inventory[thing].name.lower())
-                    if(not (weapon.lower() in weapons)):
-                        type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
-                        playerAttack()
+        if(attack.lower() in enemyOptions):
+            weapons = []
+            for thing in inventory:
+                if isinstance(inventory[thing], item.WEAPON):
+                    weapons.append(inventory[thing].name + f", dealing {inventory[thing].damage} damage")
+            weapon = "!"
+            if(len(weapons) == 0):
+                type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You have no weapons!{colour.reset}")
+                weapon = "fists"
+            else:    
+                weapon = inputType(f"{colour.reset}{colour.purple}What weapon would you like to use? Your current items are {', '.join(weapons)}  -   {colour.reset}{colour.yellow}{colour.bold}")
                 weapons = []
                 for thing in inventory:
                     if isinstance(inventory[thing], item.WEAPON):
                         weapons.append(inventory[thing].name.lower())
-                if ((weapon.lower() in weapons) or (weapon.lower() == "fists")):
-                    weapons = []
-                    for thing in inventory:
-                        if isinstance(thing, item.WEAPON):
-                            weapons.append(inventory[thing].name.lower())
+                if(not (weapon.lower() in weapons)):
+                    type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
+                    playerAttack()
+            weapons = []
+            for thing in inventory:
+                if isinstance(inventory[thing], item.WEAPON):
+                    weapons.append(inventory[thing].name.lower())
+            if ((weapon.lower() in weapons) or (weapon.lower() == "fists")):
+                weapons = []
+                for thing in inventory:
+                    if isinstance(thing, item.WEAPON):
+                        weapons.append(inventory[thing].name.lower())
                     
-                    if(weapon != "fists"):
-                        if(inventory[weapon.lower()].damage >= currentRoom.enemies[attack.capitalize()].defense):
-                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your {weapon.lower().capitalize}! You inflict a total of {inventory[weapon.lower()].damage} damage!{colour.reset}")
-                            currentRoom.enemies[attack.capitalize()].health -= inventory[weapon.lower()].damage
-                        else:
-                            type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
-                    else:        
-                        if(1 >= currentRoom.enemies[attack.capitalize()].defense):
-                            type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your fists! You inflict a total of 1 damage!{colour.reset}")
-                            currentRoom.enemies[attack.capitalize()].health -= 1
-                        else:
-                            type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
-                            
-                if(currentRoom.enemies[attack.capitalize()].health <= 0):
-                    type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} falls to the floor!")
-                    enemiesTotalHealth -= currentRoom.enemies[attack.capitalize()].maxHealth
-                    if(random.randint(1,10) < 5):
-                        type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} dropped their {currentRoom.enemies[attack.capitalize()].weapon.name}!{colour.reset}")
-                        currentRoom.items[currentRoom.enemies[attack.capitalize()].weapon.name] = currentRoom.enemies[attack.capitalize()].weapon
-                    currentRoom.enemies.pop(attack.capitalize())
-            else:   
-                type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Please enter a valid input.{colour.reset}")
-                playerAttack()
+                if(weapon != "fists"):
+                    if(inventory[weapon.lower()].damage >= currentRoom.enemies[attack.capitalize()].defense):
+                        type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your {weapon.lower().capitalize()}! You inflict a total of {inventory[weapon.lower()].damage} damage!{colour.reset}")
+                        currentRoom.enemies[attack.capitalize()].health -= inventory[weapon.lower()].damage
+                    else:
+                        type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
+                else:        
+                    if(1 >= currentRoom.enemies[attack.capitalize()].defense):
+                        type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}You attack the {attack.capitalize()} with your fists! You inflict a total of 1 damage!{colour.reset}")
+                        currentRoom.enemies[attack.capitalize()].health -= 1
+                    else:
+                        type(f"{colour.reset}{colour.bold}{colour.red}You were unable to hit {attack.capitalize()}, as their defense is too high compared to your weapon of choice.{colour.reset}")
+                        
+            if(currentRoom.enemies[attack.capitalize()].health <= 0):
+                type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} falls to the floor!")
+                enemiesTotalHealth -= currentRoom.enemies[attack.capitalize()].maxHealth
+                if(random.randint(1,10) < 5):
+                    type(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} dropped their {currentRoom.enemies[attack.capitalize()].weapon.name}!{colour.reset}")
+                    currentRoom.items[currentRoom.enemies[attack.capitalize()].weapon.name] = currentRoom.enemies[attack.capitalize()].weapon
+                currentRoom.enemies.pop(attack.capitalize())
 
     # Lets players and enemies attack
     while enemiesTotalHealth > 0 and health > 0:
@@ -227,18 +325,18 @@ while True:
                     type(f"{colour.reset}{colour.white}{colour.underlined}{colour.bold}You have picked up a {currentRoom.items[object].name}! It does {currentRoom.items[object].damage} damage!{colour.reset}")
 
                     # Check if the player already has a weapon of the same type
-                    weapon_type = currentRoom.items[object].type
+                    weaponType = currentRoom.items[object].type
                     existingWeapon = None
                     for thing in oldInventory:
                         if isinstance(oldInventory[thing], item.WEAPON):
-                            if oldInventory[thing].type == weapon_type:
+                            if oldInventory[thing].type == weaponType:
                                 existingWeapon = oldInventory[thing]
                                 break
 
                     if existingWeapon != None:
                         takeReplace = "!"
                         while not (takeReplace == "y" or takeReplace == "n"):
-                            type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You already have a {weapon_type}! It is the {existingWeapon.name}, it deals {colour.underlined}{existingWeapon.damage}{colour.reset}{colour.reset}{colour.red}{colour.bold}{colour.italic} damage.{colour.reset}")
+                            type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You already have a {weaponType}! It is the {existingWeapon.name}, it deals {colour.underlined}{existingWeapon.damage}{colour.reset}{colour.reset}{colour.red}{colour.bold}{colour.italic} damage.{colour.reset}")
                             type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}Are you sure you want to take it, leaving your {existingWeapon.name} behind?")
                             takeReplace = inputType(f"{colour.reset}{colour.purple}Y/N?   -   {colour.bold}{colour.yellow}").lower()
                             if takeReplace == "y":
@@ -315,3 +413,8 @@ while True:
                 break
         else:
             type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You can't go that way!{colour.reset}")
+    
+
+
+
+    atexit.register(close)
