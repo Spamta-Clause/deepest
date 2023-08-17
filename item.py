@@ -1,8 +1,9 @@
 class WEAPON():
-    def __init__(self,name,type,damage):
+    def __init__(self,name,type,damage,preferedClass):
         self.name = name
         self.type = type
         self.damage = damage
+        self.preferedClass = preferedClass
 class POTION():
     def __init__(self,name,type,effect):
         self.name = name
