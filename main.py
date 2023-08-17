@@ -29,6 +29,7 @@ import pickle
 rooms = [library,barracks,weaponsRoom,cage,ritualRoom]
 roomsDict = {"library":library,"barracks":barracks,"weaponsRoom":weaponsRoom,"cage":cage,"ritualRoom":ritualRoom}
 
+# Checks if there is the room file, if not it makes one
 try:
     loadedInstances = []
     for instance in room:
@@ -73,12 +74,35 @@ health = 20
 defense = 0
 inventory = {}
 
+def type(text):
+    #Slowly types text that can be changed within the same line
+    lettersTyped = ""
+    for letter in text:
+        lettersTyped += letter
+        print(lettersTyped, end= "\r")
+        if(letter != " "):
+            time.sleep(random.uniform(0,0.05))
+
+    print(text+"")
+
+def inputType(text):
+    #Slowly types text that can be changed within the same line
+    lettersTyped = ""
+    for letter in text:
+        lettersTyped += letter
+        print(lettersTyped, end= "\r")
+        if(letter != " "):
+            time.sleep(random.uniform(0,0.05))
+    return(input(text))
+
+
 def start():
+    # Assigns the values to the variables from the files
     folderPath = "rooms"
 
     if not os.path.exists(folderPath):
         os.makedirs(folderPath)
-        
+
     global inventory
     global currentRoom
     global hp
@@ -102,6 +126,8 @@ def start():
         visitedRooms = []
 
 def close():
+    type(f"{colour.reset}{colour.bold}{colour.italic}{colour.white}As you rest by your campfire, your game begins saving.")
+    # Saves the information regarding inventory, health, current room and visited rooms
     global inventory
     global currentRoom
     global hp
@@ -137,31 +163,11 @@ def close():
     hp.close()
     cR.close()
     pR.close()
+    type(f"{colour.reset}{colour.bold}{colour.italic}{colour.white}Your game has been saved.")
 
 
 
 start()
-
-def type(text):
-    #Slowly types text that can be changed within the same line
-    lettersTyped = ""
-    for letter in text:
-        lettersTyped += letter
-        print(lettersTyped, end= "\r")
-        if(letter != " "):
-            time.sleep(random.uniform(0,0.05))
-
-    print(text+"")
-
-def inputType(text):
-    #Slowly types text that can be changed within the same line
-    lettersTyped = ""
-    for letter in text:
-        lettersTyped += letter
-        print(lettersTyped, end= "\r")
-        if(letter != " "):
-            time.sleep(random.uniform(0,0.05))
-    return(input(text))
 
 
 def Show_Inventory():
@@ -176,13 +182,16 @@ def Show_Inventory():
 def Show_Commands():
     type(f"{colour.reset}{colour.bold}{colour.italic}{colour.white}Commands:{optionsList}")
 
-optionsList = ["i","help","quit"]
-options = {"i":Show_Inventory, "help":Show_Commands,"quit":close}
+optionsList = ["i","help","save"]
+options = {"i":Show_Inventory, "help":Show_Commands,"save":close}
 
 while True:
     enemiesTotalHealth = 0
     # Check if the current room has been visited before and then types the description, changing the colour based on whether or not it has
-    if currentRoom not in visitedRooms:
+    names = []
+    for room in visitedRooms:
+        names.append(room.name)
+    if currentRoom.name not in names:
         visitedRooms.append(currentRoom)
         type(colour.reset + colour.bold + colour.green + colour.italic + currentRoom.description + colour.reset)
     else:
@@ -414,7 +423,4 @@ while True:
         else:
             type(f"{colour.reset}{colour.red}{colour.bold}{colour.italic}You can't go that way!{colour.reset}")
     
-
-
-
     atexit.register(close)
