@@ -1,23 +1,24 @@
-import playerScript, colour, room, item, enemy
+import character, colour, room, item, enemy
 import time, random, copy, os
 
 # Create the items
 fists = item.WEAPON("Fists","fists",1,"None")
-boneDagger = item.WEAPON("Bone Dagger","dagger",3,"bladewarden")
+boneDagger = item.WEAPON("Bone Dagger","dagger",3,"bladewarden",[],[],45)
 
-holyHammer = item.WEAPON("Holy Hammer","claymore",12,"aurorion",["undead","fiend"])
-fireball = item.SPELL("Fireball","spell",18,45,"arcanist")
+holyHammer = item.WEAPON("Holy Hammer","claymore",12,"aurorion",["undead","fiend"],[],100)
+
+fireball = item.SPELL("Fireball","spell",12,45,"arcanist",[],[],100)
 rustyDagger = item.WEAPON("Rusty Dagger","sword",6,"bladewarden")
 rustyHalberd = item.WEAPON("Rusty Halberd","spear",4,"celestrik")
 rustyGreatsword = item.WEAPON("Rusty Greatsword","claymore",10,"aurorion")
 
 # Create the armour
-leather = item.ARMOUR("Leather",1)
+leather = item.ARMOUR("Leather",1,50)
 chainmail = item.ARMOUR("Chainmail",3)
 
 # Create the enemies
-skeleton = enemy.ENEMY("Skeleton","undead",6,1,boneDagger)
-necromancer = enemy.ENEMY("Necromancer","humanoid",18,3,rustyHalberd)
+skeleton = character.ENEMY("Skeleton","undead",6,1,{"Bone Dagger":boneDagger})
+necromancer = character.ENEMY("Necromancer","humanoid",22,3,{"Rusty Halberd": rustyHalberd,"Leather":leather,"Fireball":fireball})
 
 # Create the rooms
 library = room.ROOM("library","You are in a library. There is a door to the north and a door to the south.", "NS")
@@ -27,7 +28,7 @@ cage = room.ROOM("cage","You are in a large cage like room, in front of you lies
 ritualRoom = room.ROOM("ritualRoom","You are in a room with a large pentagram on the floor, there is a door to the south, a necromancer and three animated skeletons are within.","S","You are in a room with a large pentagram on the floor, there is a door to the south, the bodies of a defeated necromancer and three animated skeletons are within",enemies={"N1":copy.copy(necromancer),"S1":copy.copy(skeleton),"S2":copy.copy(skeleton),"S3":copy.copy(skeleton)})
 
 # Create the Player
-player = playerScript.PLAYER("None",20,{},0)
+player = character.PLAYER("None",20,{},0)
 
 import pickle
 
@@ -95,6 +96,11 @@ def slowInput(text, delay=0.03):
     return input()
 
 def start():
+    def Intro():
+        slowPrint(f"{colour.purple}-------------")
+        slowPrint(f"{colour.purple} \\RELIC-RUINS\\")
+        slowPrint(f"{colour.purple}  -------------")
+    Intro()
     # Assigns the values to the variables from the files
     folderPath = "rooms"
 
@@ -107,7 +113,7 @@ def start():
 
     # Load the information regarding the player's class, or asks them via an input statement
     try:
-        player = pickle.load(open("player.sp@mta","rb"))
+        player = pickle.load(open("player.relic","rb"))
     except:
         classOptions = ["aurorion","celestrik","bladewarden","arcanist"]
         playerClass = "!"
@@ -118,18 +124,17 @@ def start():
                 slowInput(f"{colour.reset}{error}Please enter a valid input.{colour.reset}")
         
 
-        player = playerScript.PLAYER(playerClass,20,{},0)
+        player = character.PLAYER(playerClass,20,{},0)
     
     # Load the information regarding the current room and visited rooms, or assigns them to the default values
     try:
-        currentRoom = pickle.load(open("currentRoom.sp@mta","rb"))
+        currentRoom = pickle.load(open("currentRoom.relic","rb"))
     except:
         currentRoom = barracks
     try:
-        visitedRooms = pickle.load(open("prevRooms.sp@mta","rb"))
+        visitedRooms = pickle.load(open("prevRooms.relic","rb"))
     except:
         visitedRooms = []
-
 
 def close():
     slowPrint(f"{colour.reset}{information}As you rest by your campfire, your game begins saving.")
@@ -139,17 +144,17 @@ def close():
     global visitedRooms
     #Saves the information regarding inventory, health, current room and visited rooms
     try:
-            plyr = open("player.sp@mta","xb")
+            plyr = open("player.relic","xb")
     except:
-            plyr = open("player.sp@mta","wb")
+            plyr = open("player.relic","wb")
     try:
-            cR = open("currentRoom.sp@mta","xb") 
+            cR = open("currentRoom.relic","xb") 
     except:
-            cR = open("currentRoom.sp@mta","wb")
+            cR = open("currentRoom.relic","wb")
     try:
-            pR = open("prevRooms.sp@mta","xb")
+            pR = open("prevRooms.relic","xb")
     except:
-            pR = open("prevRooms.sp@mta","wb")
+            pR = open("prevRooms.relic","wb")
     pickle.dump(player,plyr)
     pickle.dump(currentRoom,cR)
     pickle.dump(visitedRooms,pR)
@@ -182,7 +187,6 @@ def Show_Commands():
 
 optionsList = ["i","help","save"]
 options = {"i":Show_Inventory, "help":Show_Commands,"save":close}
-
 currentRoom = weaponsRoom
 while True:
     enemiesTotalHealth = 0
@@ -244,7 +248,7 @@ while True:
                 
                 elif isinstance(player.inventory[thing], item.SPELL):
                     weapons.append(player.inventory[thing].name + f", dealing {player.inventory[thing].damage} damage, with a chance of {player.inventory[thing].chance}%")
-                print(player.inventory[thing].name)
+                
             weapon = "!"
             if(len(weapons) == 0):
                 slowPrint(f"{colour.reset}{error}You have no weapons!{colour.reset}")
@@ -323,9 +327,13 @@ while True:
             if(currentRoom.enemies[attack.capitalize()].health <= 0):
                 slowPrint(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} falls to the floor!")
                 enemiesTotalHealth -= currentRoom.enemies[attack.capitalize()].maxHealth
-                if(random.randint(1,10) < 5):
-                    slowPrint(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} dropped their {currentRoom.enemies[attack.capitalize()].weapon.name}!{colour.reset}")
-                    currentRoom.items[currentRoom.enemies[attack.capitalize()].weapon.name] = currentRoom.enemies[attack.capitalize()].weapon
+                for droppedItem in currentRoom.enemies[attack.capitalize()].inventory.values():
+                    if(random.randint(1,100) <= droppedItem.dropchance):
+                        if isinstance(droppedItem,item.WEAPON): type = ""
+                        if isinstance(droppedItem, item.SPELL): type = "scroll"
+                        if isinstance(droppedItem, item.ARMOUR): type = "armour"
+                        slowPrint(f"{colour.reset}{colour.green}{colour.bold}{colour.italic}{attack.capitalize()} dropped their {droppedItem.name}{type}!{colour.reset}")
+                        currentRoom.items[droppedItem.name] = droppedItem
                 if(totalDamage >= currentRoom.enemies[attack.capitalize()].maxHealth * 2):
                     # Then deals overflow damage to the next enemy
                     # Player is able to choose
@@ -343,7 +351,7 @@ while True:
         for x in os.listdir("rooms"):
             os.remove(f"rooms\\{x}")
         for x in os.listdir():
-            if("sp@mta" in x):
+            if("relic" in x):
                 os.remove(x)
         quit()
 
@@ -351,25 +359,35 @@ while True:
     while enemiesTotalHealth > 0 and player.health > 0:
         command = playerAttack()
         if(command == "ran"):
-            if currentRoom not in visitedRooms:
-                visitedRooms.append(currentRoom)
-                slowPrint(f"{colour.reset + colour.bold + colour.green + colour.italic}{currentRoom.description}{colour.reset}")
-            else:
-                slowPrint(colour.reset + colour.blue + colour.italic + currentRoom.description + colour.reset)
             break
-        for creature in currentRoom.enemies:
-            slowPrint(f"{colour.reset}{colour.bold}{colour.red}{creature} swings at you with their {currentRoom.enemies[creature].weapon.name}{colour.reset}")
-            if(currentRoom.enemies[creature].weapon.damage >= player.defense):
-                player.health -=currentRoom.enemies[creature].weapon.damage
-                if(player.health <= 0):
-                    slowPrint(f"{colour.reset}{colour.italic}{colour.bold}{colour.red}YOU DIED")
-                    time.sleep(3)
-                    quit()
-                slowPrint(f"{colour.reset}{colour.bold}{colour.red}You took {currentRoom.enemies[creature].weapon.damage} damage. You're at {player.health} health!{colour.reset}")
-            else:
-                slowPrint(f"{colour.reset}{colour.bold}{colour.green}{creature} were unable to hit you, as your defense is too high compared to their weapon of choice.{colour.reset}")    
-            # Attack Player
-            # Check if players defense is lower or equal to the weapons attack damage
+        for creature in currentRoom.enemies.values():
+            possibleWeapons = []
+            for object in creature.inventory.values():
+                if isinstance(object,item.WEAPON) or isinstance(object, item.SPELL):
+                    possibleWeapons.append(object)
+            creature.weapon = random.choice(possibleWeapons)
+            slowPrint(f"{colour.reset}{colour.bold}{colour.red}{creature.name} attacks you with their {creature.weapon.name}{colour.reset}")
+            if(isinstance(creature.weapon, item.WEAPON)):
+                if(creature.weapon.damage >= player.defense):
+                    player.health -=creature.weapon.damage
+                    if(player.health <= 0):
+                        slowPrint(f"{colour.reset}{colour.italic}{colour.bold}{colour.red}YOU DIED")
+                        time.sleep(3)
+                        quit()
+                    slowPrint(f"{colour.reset}{colour.bold}{colour.red}You took {creature.weapon.damage} damage. You're at {player.health} health!{colour.reset}")
+                else:
+                    slowPrint(f"{colour.reset}{colour.bold}{colour.green}{creature.name} was unable to hit you, as your defense is too high compared to their weapon of choice.{colour.reset}")    
+            elif isinstance(creature.weapon, item.SPELL):
+                if(creature.weapon.chance >= random.randint(1,100)):
+                    player.health -=creature.weapon.damage
+                    if(player.health <= 0):
+                        slowPrint(f"{colour.reset}{colour.italic}{colour.bold}{colour.red}YOU DIED")
+                        time.sleep(3)
+                        quit()
+                    slowPrint(f"{colour.reset}{colour.bold}{colour.red}You took {creature.weapon.damage} damage. You're at {player.health} health!{colour.reset}")
+                else:
+                    slowPrint(f"{colour.reset}{colour.bold}{colour.green}{creature.name} was unable to cast at you.{colour.reset}")    
+
     if(currentRoom.clearDescription != None):
         currentRoom.description = currentRoom.clearDescription
     
