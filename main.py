@@ -94,7 +94,7 @@ def slowInput(text, delay=0.03):
             isCode = not isCode
         
     return input()
-
+print(colour.show())
 def start():
     def Intro():
         slowPrint(f"{colour.purple}-------------")
@@ -118,7 +118,7 @@ def start():
         classOptions = ["aurorion","celestrik","bladewarden","arcanist"]
         playerClass = "!"
         while playerClass not in classOptions:  # Keep asking until a valid input is given
-            playerClass = slowInput(f"{colour.reset}{colour.purple}What class would you like to play? Aurorion / Bonus damage with claymores, Celestrik / Attacks multiple times with spears, Bladewarden / Bonus damage and two attacks with shortsword, Arcanist / Higher chance to hit with spells     -     {colour.italic}{colour.yellow}").lower()
+            playerClass = slowInput(f"{colour.reset}{colour.purple}What class would you like to play? Aurorion / Bonus damage with claymores, \nCelestrik / Attacks multiple times with spears, \nBladewarden / Bonus damage and two attacks with shortsword, \nArcanist / Higher chance to hit with spells     -     {colour.italic}{colour.yellow}").lower()
             
             if playerClass not in classOptions:
                 slowInput(f"{colour.reset}{error}Please enter a valid input.{colour.reset}")
